@@ -33,3 +33,22 @@ def remove_bg(image_path):
     
     return img
 
+IMG_SIZE = (224, 224)
+train_images, y = [], []
+
+for image_file in image_files_clean:
+    img_path = os.path.join(train_image_path_clean, image_file)
+    img = remove_bg(img_path)
+    img = cv2.resize(img, IMG_SIZE)
+    train_images.append(img)
+    y.append("1")
+
+for image_file in image_files_dirty:
+    img_path = os.path.join(train_image_path_dirty, image_file)
+    img = remove_bg(img_path)
+    img = cv2.resize(img, IMG_SIZE)
+    train_images.append(img)
+    y.append("0")
+
+print("Training images loaded and backgrounds removed successfully ✅")
+
