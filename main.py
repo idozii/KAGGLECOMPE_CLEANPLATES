@@ -61,3 +61,74 @@ for img in image_files_test:
     test_images.append(img)
 print("Test images loaded and backgrounds removed successfully ✅")
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model, preprocess = clip.load("ViT-B/32", device=device)
+model = model.float()
+
+class PlateDataset(Dataset):
+    def __init__(self, images, labels, preprocess):
+        self.images = images
+        self.labels = labels
+        self.preprocess = preprocess
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        image = Image.fromarray(self.images[idx])
+        image = self.preprocess(image)
+        label = torch.tensor(int(self.labels[idx]))
+        return image, label
+
+train_dataset = PlateDataset(train_images, y, preprocess)
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+
+class CLIPClassifier(nn.Module):
+    def __init__(self):
+        super(CLIPClassifier, self).__init__()
+        self.clip_model = model.visual
+        self.fc = nn.Linear(512, 2)
+
+    def forward(self, x):
+        with torch.no_grad():
+            x = self.clip_model(x)
+        return self.fc(x)
+
+classifier = CLIPClassifier().to(device)
+
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(classifier.fc.parameters(), lr=0.005)
+
+num_epochs = 600
+for epoch in range(num_epochs):
+    classifier.train()
+    running_loss = 0.0
+
+    for images, labels in train_loader:
+        images, labels = images.to(device), labels.to(device)
+
+        optimizer.zero_grad()
+        outputs = classifier(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item()
+
+    print(f"Epoch {epoch+1}/{num_epochs}, Accuracy: {(1- (running_loss/len(train_loader))) * 100}%")
+
+print("Training Complete ✅")
+
+test_dataset = PlateDataset(test_images, [0] * len(test_images), preprocess)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+classifier.eval()
+predictions = []
+
+with torch.no_grad():
+    for images, _ in test_loader:
+        images = images.to(device)
+        outputs = classifier(images)
+        predicted_labels = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        predictions.extend(["cleaned" if label == 1 else "dirty" for label in predicted_labels])
