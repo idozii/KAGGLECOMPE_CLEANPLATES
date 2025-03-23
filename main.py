@@ -52,3 +52,12 @@ for image_file in image_files_dirty:
 
 print("Training images loaded and backgrounds removed successfully ✅")
 
+test_images = []
+
+for img in image_files_test:
+    img_path = os.path.join(test_image_path, img)
+    img = remove_bg(img_path)
+    img = cv2.resize(img, IMG_SIZE)
+    test_images.append(img)
+print("Test images loaded and backgrounds removed successfully ✅")
+
