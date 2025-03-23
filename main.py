@@ -132,3 +132,9 @@ with torch.no_grad():
         predicted_labels = torch.argmax(outputs, dim=1).cpu().numpy()
 
         predictions.extend(["cleaned" if label == 1 else "dirty" for label in predicted_labels])
+
+output_path = "submission.csv"
+df = pd.DataFrame({"id": [f"{i:04d}" for i in range(len(predictions))], "label": predictions})
+df.to_csv(output_path, index=False)
+
+print(f"Predictions saved to {output_path} ✅")
